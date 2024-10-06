@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt #per poder mostrar els grafics
+from collections import defaultdict
+import ast
 
 # Configurar pandas para mostrar todas las columnas
 #pd.set_option('display.max_columns', None)
@@ -9,7 +11,7 @@ import matplotlib.pyplot as plt #per poder mostrar els grafics
 dataBuAr = pd.read_csv("CityFiles/buenos aires/listings.csv")
 
 
-columnas_a_eliminar = [
+columns_to_drop = [
     'listing_url', 'scrape_id', 'last_scraped', 'source', 'neighborhood_overview',
     'host_url', 'host_name', 'host_since', 'host_location', 'host_about',
     'host_response_time', 'host_is_superhost', 'host_thumbnail_url', 'host_picture_url',
@@ -41,34 +43,31 @@ columns_histogram = [
     "review_scores_checkin",
     "review_scores_communication",
     "review_scores_location",
-    "review_scores_value"
+    "review_scores_value",
+    "price",
+    "host_response_rate",
+    "host_acceptance_rate",
+    "host_identity_verified",
 ]
 
 columns_non_histogram = [
     "name",
     "description",
     "picture_url",
-    "host_response_rate",
-    "host_acceptance_rate",
-    "host_identity_verified",
     "neighbourhood",
     "neighbourhood_cleansed",
     "neighbourhood_group_cleansed",
     "property_type",
     "room_type",
     "amenities",
-    "price",
     "instant_bookable"
 ]
 
+# #Analisis exploratori
+# #Eliminar columnas
+dataBuArCleaned = dataBuAr.drop(columns= columns_to_drop, axis=1, inplace=False)
 
-#Analisis exploratori
-#Eliminar columnas
-dataBuArCleaned = dataBuAr.drop(columns= columnas_a_eliminar, axis=1, inplace=False)
-print(dataBuArCleaned.info())
-
-#Parte transformación datos
-#Pasar a float
+# Transformar dades
 dataBuArCleaned['price'] = dataBuArCleaned['price'].str.replace('$', '', regex=False)
 dataBuArCleaned['price'] = dataBuArCleaned['price'].str.replace(',', '', regex=False)
 dataBuArCleaned['price'] = dataBuArCleaned['price'].astype(float)
@@ -76,19 +75,107 @@ dataBuArCleaned['host_response_rate'] = dataBuArCleaned['host_response_rate'].st
 dataBuArCleaned['host_response_rate'] = dataBuArCleaned['host_response_rate'].astype(float)
 dataBuArCleaned['host_acceptance_rate'] = dataBuArCleaned['host_acceptance_rate'].str.replace('%', '', regex=False)
 dataBuArCleaned['host_acceptance_rate'] = dataBuArCleaned['host_acceptance_rate'].astype(float)
-
-#Pasar a boleano
 dataBuArCleaned['host_identity_verified'] = dataBuArCleaned['host_identity_verified'].replace({'t': True, 'f': False})
 dataBuArCleaned['instant_bookable'] = dataBuArCleaned['instant_bookable'].replace({'t': True, 'f': False})
 
-# # Verifica el resultado
-# print(dataBuArCleaned[['price','host_response_rate','host_acceptance_rate','host_identity_verified','instant_bookable']].info())
+print(dataBuArCleaned.info())
 
-for column in columns_histogram:
-    dataBuArCleaned.hist(column)
-    plt.show()
+#Gestionem columnes property_type, room_type i amenities. Farem recompte de les diferents opcions que tenim i les agruparem en categories
+#Guardarem en un diccionari les diferents opcions que tenim
+property_counts = defaultdict(int)
+room_counts = defaultdict(int)
+amenity_counts = defaultdict(int)
 
-for column in columns_histogram:
-    print(f"Estadísticas para la columna {column}:")
-    print(dataBuArCleaned[column].describe())
-# dataBuAr.to_csv("CityFiles/barcelona/tarnsformado.csv", sep = ';', index=True)
+# Funció per comptar elements en una columna
+def count_elements(column, counts_dict):
+    for value in column:
+        if pd.notna(value):  # Ignorar valors NaN
+            # Convertir l'string de 'amenities' a llista si es necessari
+            if column.name == 'amenities':
+                # usem ast.literal_eval per convertir l'string a una lista
+                try:
+                    value = ast.literal_eval(value)
+                except (ValueError, SyntaxError):
+                    value = []
+            else:
+                value = [value]
+
+            for item in value:
+                counts_dict[item] += 1
+
+
+# Contar en cada columna
+count_elements(dataBuArCleaned['property_type'], property_counts)
+count_elements(dataBuArCleaned['room_type'], room_counts)
+count_elements(dataBuArCleaned['amenities'], amenity_counts)
+
+# Convertir a DataFrames para visualización
+property_counts_df = pd.DataFrame(property_counts.items(), columns=['Property Type', 'Count'])
+room_counts_df = pd.DataFrame(room_counts.items(), columns=['Room Type', 'Count'])
+amenity_counts_df = pd.DataFrame(amenity_counts.items(), columns=['Amenity', 'Count'])
+
+# Mostrar resultados
+print("Property Type Counts:")
+print(property_counts_df)
+
+print("\nRoom Type Counts:")
+print(room_counts_df)
+
+print("\nAmenity Counts:")
+print(amenity_counts_df)
+
+# Gràfica Property Types (Top 10)
+plt.figure(figsize=(10, 6))
+top_property_counts = property_counts_df.sort_values(by='Count', ascending=False).head(10)
+plt.barh(top_property_counts['Property Type'], top_property_counts['Count'], color='skyblue')
+plt.title('Top 10 Property Types')
+plt.xlabel('Count')
+plt.ylabel('Property Type')
+plt.grid(axis='x')
+plt.show()
+
+# Gràfica Room Types
+plt.figure(figsize=(10, 6))
+plt.barh(room_counts_df['Room Type'], room_counts_df['Count'], color='salmon')
+plt.title('Counts of Room Types')
+plt.xlabel('Count')
+plt.ylabel('Room Type')
+plt.grid(axis='x')
+plt.show()
+
+# Gràfica Amenities (top 10)
+plt.figure(figsize=(10, 6))
+top_amenities = amenity_counts_df.sort_values(by='Count', ascending=False).head(10)
+plt.barh(top_amenities['Amenity'], top_amenities['Count'], color='lightgreen')
+plt.title('Top 10 Amenities Counts')
+plt.xlabel('Count')
+plt.ylabel('Amenity')
+plt.grid(axis='x')
+plt.show()
+
+
+#Instant bookable & number of reviews
+grouped_data = dataBuArCleaned.groupby('instant_bookable')['number_of_reviews'].mean().reset_index()
+
+# Gràfica
+plt.figure(figsize=(8, 5))
+plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['number_of_reviews'], color=['lightblue', 'salmon'])
+plt.title('Average Number of Reviews by Instant Bookable Status')
+plt.xlabel('Instant Bookable')
+plt.ylabel('Average Number of Reviews')
+plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
+plt.grid(axis='y')
+plt.show()
+
+#Instant bookable & availability_365
+grouped_data = dataBuArCleaned.groupby('instant_bookable')['availability_365'].mean().reset_index()
+
+# Gràfica
+plt.figure(figsize=(8, 5))
+plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['availability_365'], color=['lightblue', 'salmon'])
+plt.title('Average availability by Instant Bookable Status')
+plt.xlabel('Instant Bookable')
+plt.ylabel('Average Number of Reviews')
+plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
+plt.grid(axis='y')
+plt.show()
