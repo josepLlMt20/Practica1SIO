@@ -51,6 +51,10 @@ columns_histogram = [
 ]
 
 columns_non_histogram = [
+    "id",
+    "host_id",
+    "latitude",
+    "longitude",
     "name",
     "description",
     "picture_url",
@@ -78,104 +82,135 @@ dataBuArCleaned['host_acceptance_rate'] = dataBuArCleaned['host_acceptance_rate'
 dataBuArCleaned['host_identity_verified'] = dataBuArCleaned['host_identity_verified'].replace({'t': True, 'f': False})
 dataBuArCleaned['instant_bookable'] = dataBuArCleaned['instant_bookable'].replace({'t': True, 'f': False})
 
-print(dataBuArCleaned.info())
+# print(dataBuArCleaned.info())
+#
+# #Gestionem columnes property_type, room_type i amenities. Farem recompte de les diferents opcions que tenim i les agruparem en categories
+# #Guardarem en un diccionari les diferents opcions que tenim
+# property_counts = defaultdict(int)
+# room_counts = defaultdict(int)
+# amenity_counts = defaultdict(int)
+#
+# # Funció per comptar elements en una columna
+# def count_elements(column, counts_dict):
+#     for value in column:
+#         if pd.notna(value):  # Ignorar valors NaN
+#             # Convertir l'string de 'amenities' a llista si es necessari
+#             if column.name == 'amenities':
+#                 # usem ast.literal_eval per convertir l'string a una lista
+#                 try:
+#                     value = ast.literal_eval(value)
+#                 except (ValueError, SyntaxError):
+#                     value = []
+#             else:
+#                 value = [value]
+#
+#             for item in value:
+#                 counts_dict[item] += 1
+#
+#
+# # Contar en cada columna
+# count_elements(dataBuArCleaned['property_type'], property_counts)
+# count_elements(dataBuArCleaned['room_type'], room_counts)
+# count_elements(dataBuArCleaned['amenities'], amenity_counts)
+#
+# # Convertir a DataFrames para visualización
+# property_counts_df = pd.DataFrame(property_counts.items(), columns=['Property Type', 'Count'])
+# room_counts_df = pd.DataFrame(room_counts.items(), columns=['Room Type', 'Count'])
+# amenity_counts_df = pd.DataFrame(amenity_counts.items(), columns=['Amenity', 'Count'])
+#
+# # Mostrar resultados
+# print("Property Type Counts:")
+# print(property_counts_df)
+#
+# print("\nRoom Type Counts:")
+# print(room_counts_df)
+#
+# print("\nAmenity Counts:")
+# print(amenity_counts_df)
+#
+# # Gràfica Property Types (Top 10)
+# plt.figure(figsize=(10, 6))
+# top_property_counts = property_counts_df.sort_values(by='Count', ascending=False).head(10)
+# plt.barh(top_property_counts['Property Type'], top_property_counts['Count'], color='skyblue')
+# plt.title('Top 10 Property Types')
+# plt.xlabel('Count')
+# plt.ylabel('Property Type')
+# plt.grid(axis='x')
+# plt.show()
+#
+# # Gràfica Room Types
+# plt.figure(figsize=(10, 6))
+# plt.barh(room_counts_df['Room Type'], room_counts_df['Count'], color='salmon')
+# plt.title('Counts of Room Types')
+# plt.xlabel('Count')
+# plt.ylabel('Room Type')
+# plt.grid(axis='x')
+# plt.show()
+#
+# # Gràfica Amenities (top 10)
+# plt.figure(figsize=(10, 6))
+# top_amenities = amenity_counts_df.sort_values(by='Count', ascending=False).head(10)
+# plt.barh(top_amenities['Amenity'], top_amenities['Count'], color='lightgreen')
+# plt.title('Top 10 Amenities Counts')
+# plt.xlabel('Count')
+# plt.ylabel('Amenity')
+# plt.grid(axis='x')
+# plt.show()
+#
+#
+# #Instant bookable & number of reviews
+# grouped_data = dataBuArCleaned.groupby('instant_bookable')['number_of_reviews'].mean().reset_index()
+#
+# # Gràfica
+# plt.figure(figsize=(8, 5))
+# plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['number_of_reviews'], color=['lightblue', 'salmon'])
+# plt.title('Average Number of Reviews by Instant Bookable Status')
+# plt.xlabel('Instant Bookable')
+# plt.ylabel('Average Number of Reviews')
+# plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
+# plt.grid(axis='y')
+# plt.show()
+#
+# #Instant bookable & availability_365
+# grouped_data = dataBuArCleaned.groupby('instant_bookable')['availability_365'].mean().reset_index()
+#
+# # Gràfica
+# plt.figure(figsize=(8, 5))
+# plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['availability_365'], color=['lightblue', 'salmon'])
+# plt.title('Average availability by Instant Bookable Status')
+# plt.xlabel('Instant Bookable')
+# plt.ylabel('Average Number of Reviews')
+# plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
+# plt.grid(axis='y')
+# plt.show()
 
-#Gestionem columnes property_type, room_type i amenities. Farem recompte de les diferents opcions que tenim i les agruparem en categories
-#Guardarem en un diccionari les diferents opcions que tenim
-property_counts = defaultdict(int)
-room_counts = defaultdict(int)
-amenity_counts = defaultdict(int)
+#Analisi de les dades numeriques
 
-# Funció per comptar elements en una columna
-def count_elements(column, counts_dict):
-    for value in column:
-        if pd.notna(value):  # Ignorar valors NaN
-            # Convertir l'string de 'amenities' a llista si es necessari
-            if column.name == 'amenities':
-                # usem ast.literal_eval per convertir l'string a una lista
-                try:
-                    value = ast.literal_eval(value)
-                except (ValueError, SyntaxError):
-                    value = []
-            else:
-                value = [value]
+numericDataBuAr = dataBuArCleaned.drop(columns= columns_non_histogram, axis=1, inplace=False)
 
-            for item in value:
-                counts_dict[item] += 1
+print(numericDataBuAr.describe())
 
+#Mediana
+median_values = numericDataBuAr.median()
+print(median_values)
 
-# Contar en cada columna
-count_elements(dataBuArCleaned['property_type'], property_counts)
-count_elements(dataBuArCleaned['room_type'], room_counts)
-count_elements(dataBuArCleaned['amenities'], amenity_counts)
-
-# Convertir a DataFrames para visualización
-property_counts_df = pd.DataFrame(property_counts.items(), columns=['Property Type', 'Count'])
-room_counts_df = pd.DataFrame(room_counts.items(), columns=['Room Type', 'Count'])
-amenity_counts_df = pd.DataFrame(amenity_counts.items(), columns=['Amenity', 'Count'])
-
-# Mostrar resultados
-print("Property Type Counts:")
-print(property_counts_df)
-
-print("\nRoom Type Counts:")
-print(room_counts_df)
-
-print("\nAmenity Counts:")
-print(amenity_counts_df)
-
-# Gràfica Property Types (Top 10)
-plt.figure(figsize=(10, 6))
-top_property_counts = property_counts_df.sort_values(by='Count', ascending=False).head(10)
-plt.barh(top_property_counts['Property Type'], top_property_counts['Count'], color='skyblue')
-plt.title('Top 10 Property Types')
-plt.xlabel('Count')
-plt.ylabel('Property Type')
-plt.grid(axis='x')
+#Districució de les dades
+numericDataBuAr.hist(bins=50, figsize=(20, 15), edgecolor = 'black')
+plt.tight_layout()
 plt.show()
 
-# Gràfica Room Types
-plt.figure(figsize=(10, 6))
-plt.barh(room_counts_df['Room Type'], room_counts_df['Count'], color='salmon')
-plt.title('Counts of Room Types')
-plt.xlabel('Count')
-plt.ylabel('Room Type')
-plt.grid(axis='x')
-plt.show()
+#Desviació estàndard
+std_values = numericDataBuAr.std()
+print(std_values)
 
-# Gràfica Amenities (top 10)
-plt.figure(figsize=(10, 6))
-top_amenities = amenity_counts_df.sort_values(by='Count', ascending=False).head(10)
-plt.barh(top_amenities['Amenity'], top_amenities['Count'], color='lightgreen')
-plt.title('Top 10 Amenities Counts')
-plt.xlabel('Count')
-plt.ylabel('Amenity')
-plt.grid(axis='x')
-plt.show()
-
-
-#Instant bookable & number of reviews
-grouped_data = dataBuArCleaned.groupby('instant_bookable')['number_of_reviews'].mean().reset_index()
+#Correlació
+correlation_matrix = numericDataBuAr.corr()
 
 # Gràfica
-plt.figure(figsize=(8, 5))
-plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['number_of_reviews'], color=['lightblue', 'salmon'])
-plt.title('Average Number of Reviews by Instant Bookable Status')
-plt.xlabel('Instant Bookable')
-plt.ylabel('Average Number of Reviews')
-plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
-plt.grid(axis='y')
-plt.show()
-
-#Instant bookable & availability_365
-grouped_data = dataBuArCleaned.groupby('instant_bookable')['availability_365'].mean().reset_index()
-
-# Gràfica
-plt.figure(figsize=(8, 5))
-plt.bar(grouped_data['instant_bookable'].astype(str), grouped_data['availability_365'], color=['lightblue', 'salmon'])
-plt.title('Average availability by Instant Bookable Status')
-plt.xlabel('Instant Bookable')
-plt.ylabel('Average Number of Reviews')
-plt.xticks(ticks=[0, 1], labels=['No', 'Yes'])
-plt.grid(axis='y')
+plt.figure(figsize=(12, 8))
+plt.matshow(correlation_matrix, cmap='coolwarm', fignum=1)
+plt.colorbar(label='Correlation Coefficient')
+plt.xticks(range(len(correlation_matrix.columns)), correlation_matrix.columns, rotation='vertical')
+plt.yticks(range(len(correlation_matrix.columns)), correlation_matrix.columns)
+plt.title('Correlation Matrix')
 plt.show()
