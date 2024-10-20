@@ -71,7 +71,6 @@ variables_numericas = [
 ]
 
 variables_categoricas = [
-    'name', 'description', 'picture_url', 'neighbourhood',
     'neighbourhood_cleansed', 'neighbourhood_group_cleansed', 'property_type',
     'room_type', 'amenities'
 ]
@@ -79,6 +78,7 @@ variables_categoricas = [
 variables_booleanas = [
     'host_identity_verified', 'instant_bookable'
 ]
+'''
 #Analisis variables numeriques
 #Estadisticas descriptivas
 data_numericas = dataBcn[variables_numericas]
@@ -112,6 +112,13 @@ plt.xlabel('availability_365')
 plt.ylabel('Frecuencia')
 plt.show()
 
+#Boxplot de la variable availability_365
+plt.figure(figsize=(10, 6))
+sns.boxplot(x=dataBcn['availability_365'])
+plt.title('Boxplot de la variable availability_365')
+plt.xlabel('availability_365')
+plt.show()
+
 #Distribución de la variable number_of_reviews
 plt.figure(figsize=(10, 6))
 sns.histplot(dataBcn['number_of_reviews'], bins=30, kde=True)
@@ -121,13 +128,12 @@ plt.ylabel('Frecuencia')
 plt.show()
 
 ##QUITAR OUTLIERS DE LA VARIABLE PRICE
-# Suponiendo que ya tienes tu dataframe con la variable "price"
-# Filtrar eliminando outliers usando los percentiles
-lower_bound = data['price'].quantile(0.01)  # 1er percentil
-upper_bound = data['price'].quantile(0.99)  # 99º percentil
+#Filtrar eliminando outliers usando los percentiles
+lower_bound = dataBcn['price'].quantile(0.01)  # 1er percentil
+upper_bound = dataBcn['price'].quantile(0.99)  # 99º percentil
 
 # Crear un nuevo dataframe sin outliers
-data_filtered = data[(data['price'] >= lower_bound) & (data['price'] <= upper_bound)]
+data_filtered = dataBcn[(dataBcn['price'] >= lower_bound) & (dataBcn['price'] <= upper_bound)]
 
 # Representación gráfica sin outliers
 sns.histplot(data_filtered['price'], kde=True)
@@ -136,3 +142,84 @@ plt.xlabel('price')
 plt.ylabel('Frecuencia')
 plt.show()
 
+print(data_filtered['price'].describe())
+
+#Boxplot de la variable price
+plt.figure(figsize=(10, 6))
+sns.boxplot(x=dataBcn['price'])
+plt.title('Boxplot de la variable price')
+plt.xlabel('price')
+plt.show()
+
+#boxplot de la variable number_of_reviews
+plt.figure(figsize=(10, 6))
+sns.boxplot(x=dataBcn['number_of_reviews'])
+plt.title('Boxplot de la variable number_of_reviews')
+plt.xlabel('number_of_reviews')
+plt.show()
+
+#Histograma de la variable number_of_reviews
+plt.figure(figsize=(10, 6))
+sns.histplot(dataBcn['number_of_reviews'], bins=30, kde=True)
+plt.title('Distribución de la variable number_of_reviews')
+plt.xlabel('number_of_reviews')
+plt.ylabel('Frecuencia')
+plt.show()
+
+#QUITAR OUTLIERS DE LA VARIABLE number_of_reviews
+#Filtrar eliminando outliers usando los percentiles
+lower_bound = dataBcn['number_of_reviews'].quantile(0.25)  # 1er quartil
+upper_bound = dataBcn['number_of_reviews'].quantile(0.75)  # 3 quartil
+
+# Crear un nuevo dataframe sin outliers
+data_filtered = dataBcn[(dataBcn['number_of_reviews'] >= lower_bound) & (dataBcn['number_of_reviews'] <= upper_bound)]
+
+# Representación gráfica sin outliers
+sns.histplot(data_filtered['number_of_reviews'], kde=True)
+plt.title('Distribución de la variable number_of_reviews sin outliers')
+plt.xlabel('number_of_reviews')
+plt.ylabel('Frecuencia')
+plt.show()
+
+# Representació histograma de la variable accommodates
+plt.figure(figsize=(10, 6))
+sns.histplot(dataBcn['accommodates'], bins=15, kde=True)
+plt.title('Distribución de la variable accommodates')
+plt.xlabel('accommodates')
+plt.ylabel('Frecuencia')
+plt.show()
+'''
+
+
+#Analisis variables categoricas
+#Estadisticas descriptivas
+data_categoricas = dataBcn[variables_categoricas]
+
+frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts()  # Frecuencia absoluta
+relative_frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts(normalize=True)  # Frecuencia relativa
+percentage = relative_frequencies * 100  # Porcentaje
+
+# Crear un DataFrame con estos valores
+tabla_frecuencias = pd.DataFrame({
+    'Frecuencia': frequencies,
+    'Frecuencia Relativa': relative_frequencies,
+    'Porcentaje (%)': percentage
+})
+
+# Mostrar la tabla
+print(tabla_frecuencias)
+
+# Representación gráfica de la variable neighbourhood_group_cleansed
+plt.figure(figsize=(10, 6))
+sns.countplot(x='neighbourhood_group_cleansed', data=data_categoricas)
+plt.title('Distribución de la variable neighbourhood_group_cleansed')
+plt.xlabel('neighbourhood_group_cleansed')
+plt.ylabel('Frecuencia')
+plt.xticks(rotation=45)
+plt.show()
+
+
+data_categoricas['neighbourhood_group_cleansed'].value_counts().plot.pie(autopct='%1.1f%%')
+plt.title('Distribución de la variable neighbourhood_group_cleansed')
+plt.ylabel('')
+plt.show()
