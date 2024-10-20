@@ -112,6 +112,13 @@ plt.xlabel('availability_365')
 plt.ylabel('Frecuencia')
 plt.show()
 
+#Boxplot de la variable availability_365
+plt.figure(figsize=(10, 6))
+sns.boxplot(x=dataBcn['availability_365'])
+plt.title('Boxplot de la variable availability_365')
+plt.xlabel('availability_365')
+plt.show()
+
 #Distribución de la variable number_of_reviews
 plt.figure(figsize=(10, 6))
 sns.histplot(dataBcn['number_of_reviews'], bins=30, kde=True)
@@ -121,18 +128,26 @@ plt.ylabel('Frecuencia')
 plt.show()
 
 ##QUITAR OUTLIERS DE LA VARIABLE PRICE
-# Suponiendo que ya tienes tu dataframe con la variable "price"
-# Filtrar eliminando outliers usando los percentiles
-lower_bound = data['price'].quantile(0.01)  # 1er percentil
-upper_bound = data['price'].quantile(0.99)  # 99º percentil
+#Filtrar eliminando outliers usando los percentiles
+lower_bound = dataBcn['price'].quantile(0.01)  # 1er percentil
+upper_bound = dataBcn['price'].quantile(0.99)  # 99º percentil
 
 # Crear un nuevo dataframe sin outliers
-data_filtered = data[(data['price'] >= lower_bound) & (data['price'] <= upper_bound)]
+data_filtered = dataBcn[(dataBcn['price'] >= lower_bound) & (dataBcn['price'] <= upper_bound)]
 
 # Representación gráfica sin outliers
 sns.histplot(data_filtered['price'], kde=True)
 plt.title('Distribución de la variable price sin outliers')
 plt.xlabel('price')
 plt.ylabel('Frecuencia')
+plt.show()
+
+print(data_filtered['price'].describe())
+
+#Boxplot de la variable price
+plt.figure(figsize=(10, 6))
+sns.boxplot(x=dataBcn['price'])
+plt.title('Boxplot de la variable price')
+plt.xlabel('price')
 plt.show()
 
