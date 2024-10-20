@@ -16,13 +16,13 @@ print(dataBcn.info())
 dataBcn.hist('availability_365')
 plt.show()
 
-
-
-#Histograma relaciones
-dataBcn.plot(kind='scatter', x='accommodates', y='availability_365', alpha=0.5)
-plt.title("Relación entre el Precio y la Disponibilidad")
-plt.xlabel("Accommodates")
-plt.ylabel("Días disponibles al año")
-plt.show()
+#
+#
+# #Histograma relaciones
+# dataBcn.plot(kind='scatter', x='accommodates', y='availability_365', alpha=0.5)
+# plt.title("Relación entre el Precio y la Disponibilidad")
+# plt.xlabel("Accommodates")
+# plt.ylabel("Días disponibles al año")
+# plt.show()
 
 dataBcn.to_csv("CityFiles/barcelona/tarnsformado.csv", sep = ';', index=True)

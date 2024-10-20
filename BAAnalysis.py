@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt #per poder mostrar els grafics
 from matplotlib.ticker import FuncFormatter
 from collections import defaultdict
 import ast
-
-from main import dataBcn
+import seaborn as sns
 
 # Configurar pandas para mostrar todas las columnas
 pd.set_option('display.max_columns', None)
@@ -80,6 +79,8 @@ dataBuArCleaned['price'] = dataBuArCleaned['price'].str.replace(',', '', regex=F
 dataBuArCleaned['price'] = dataBuArCleaned['price'].astype(float)
 mean_price = dataBuArCleaned['price'].mean()
 dataBuArCleaned['price'].fillna(mean_price, inplace=True)
+mean_review_scores_rating = dataBuArCleaned['review_scores_rating'].mean()
+dataBuArCleaned['review_scores_rating'].fillna(mean_review_scores_rating, inplace=True)
 dataBuArCleaned['host_response_rate'] = dataBuArCleaned['host_response_rate'].str.replace('%', '', regex=False)
 dataBuArCleaned['host_response_rate'] = dataBuArCleaned['host_response_rate'].astype(float)
 dataBuArCleaned['host_acceptance_rate'] = dataBuArCleaned['host_acceptance_rate'].str.replace('%', '', regex=False)
@@ -307,32 +308,101 @@ plt.xticks(rotation=45, ha='right')
 plt.tight_layout()
 plt.show()
 
-#Gràfica de la relació entre el preu i la puntuació de la review
+# #Relacio entre preu i puntuació
+#
+# # Paso 3: Filtrar los datos para que ambos tengan valores no nulos
+# filtered_df = dataBuArCleaned
+#
+# # Paso 4: Asegurarse de que no hay NaN o infinitos en el conjunto de datos filtrado
+# filtered_df = filtered_df[np.isfinite(filtered_df['price']) & np.isfinite(filtered_df['review_scores_rating'])]
+#
+# # Verificar que hay suficientes datos
+# if filtered_df.shape[0] < 2:
+#     raise ValueError("No hay suficientes datos para realizar el ajuste.")
+#
+# # Paso 5: Crear un gráfico de dispersión
+# plt.figure(figsize=(12, 6))
+# plt.scatter(filtered_df['price'], filtered_df['review_scores_rating'], alpha=0.5)
+# plt.title('Relationship between Price and Review Scores')
+# plt.xlabel('Price (ARS)')
+# plt.ylabel('Review Scores')
+# plt.grid()
+#
+# # Paso 6: Agregar una línea de tendencia
+# try:
+#     m, b = np.polyfit(filtered_df['price'], filtered_df['review_scores_rating'], 1)  # Ajuste lineal
+#     plt.plot(filtered_df['review_scores_rating'], m * filtered_df['review_scores_rating'] + b, color='red')
+# except np.linalg.LinAlgError as e:
+#     print("Error al calcular la línea de tendencia:", e)
+#
+# plt.tight_layout()
+# plt.show()
 
-# Paso 3: Filtrar los datos para que ambos tengan valores no nulos
-filtered_df = dataBuArCleaned.dropna(subset=['review_scores_rating'])  # Solo eliminamos nulos en reseñas
+# OUTLIERS DE LA VARIABLE PRICE I REVIEW SCORES RATING
 
-# Paso 4: Asegurarse de que no hay NaN o infinitos en el conjunto de datos filtrado
-filtered_df = filtered_df[np.isfinite(filtered_df['review_scores_rating']) & np.isfinite(filtered_df['price'])]
+plt.figure(figsize=(10, 6))
+plt.boxplot(dataBuArCleaned['price'], vert=False)
+plt.title('Boxplot of Prices')
+plt.xlabel('Price (ARS)')
+plt.show()
 
-# Verificar que hay suficientes datos
-if filtered_df.shape[0] < 2:
-    raise ValueError("No hay suficientes datos para realizar el ajuste.")
+plt.figure(figsize=(10, 6))
+plt.boxplot(dataBuArCleaned['review_scores_rating'].dropna(), vert=False)
+plt.title('Boxplot of Review Scores Rating')
+plt.xlabel('Review Scores Rating')
+plt.show()
 
-# Paso 5: Crear un gráfico de dispersión
+# Crear categorías de precio
+dataBuArCleaned['price_category'] = pd.cut(dataBuArCleaned['price'], bins=[0, 5000, 15000, 30000, np.inf], labels=['Low', 'Medium', 'High', 'Very High'])
+
+# Gráfico de precios por categorías y reviews
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='price_category', y='review_scores_rating', data=dataBuArCleaned)
+plt.title('Review Scores by Price Category')
+plt.xlabel('Price Category')
+plt.ylabel('Review Scores')
+plt.show()
+
+# import folium
+# from folium.plugins import HeatMap
+#
+# # Crear mapa centrado en Buenos Aires
+# m = folium.Map(location=[-34.6083, -58.3712], zoom_start=11)
+#
+# # Agregar puntos de calor para las propiedades
+# heat_data = [[row['latitude'], row['longitude'], row['price']] for index, row in dataBuArCleaned.iterrows()]
+#
+# HeatMap(heat_data).add_to(m)
+#
+# # Guardar el mapa en un archivo HTML
+# m.save('heatmap_buenos_aires.html')
+
+# Correlacio entre amenities i reviews
+amenity_corr = dataBuArCleaned[['amenities_count', 'review_scores_rating', 'price']].corr()
+print(amenity_corr)
+
+
+correlation_matrix = dataBuArCleaned[['price', 'accommodates', 'bedrooms', 'bathrooms', 'review_scores_rating', 'amenities_count']].corr()
+print(correlation_matrix)
+
+
+# Contar cuántos listados hay por cada grupo de vecindarios
+neighbourhood_group_counts = dataBuArCleaned['neighbourhood_cleansed'].value_counts()
+
+# Ajustar el tamaño del gráfico
 plt.figure(figsize=(12, 6))
-plt.scatter(filtered_df['review_scores_rating'], filtered_df['price'], alpha=0.5)
-plt.title('Relationship between Price and Review Scores')
-plt.xlabel('Review Scores')
-plt.ylabel('Price (ARS)')
-plt.grid()
 
-# Paso 6: Agregar una línea de tendencia
-try:
-    m, b = np.polyfit(filtered_df['review_scores_rating'], filtered_df['price'], 1)  # Ajuste lineal
-    plt.plot(filtered_df['review_scores_rating'], m * filtered_df['review_scores_rating'] + b, color='red')
-except np.linalg.LinAlgError as e:
-    print("Error al calcular la línea de tendencia:", e)
+# Crear gráfico de barras
+plt.bar(neighbourhood_group_counts.index, neighbourhood_group_counts.values, color='skyblue')
 
-plt.tight_layout()
+# Añadir título y etiquetas
+plt.title('Distribució de Neighbourhood Cleansed', fontsize=16)
+plt.xlabel('Neighbourhood Group', fontsize=14)
+plt.ylabel('Número de Listados', fontsize=14)
+
+# Rotar etiquetas del eje x para mejorar la legibilidad
+plt.xticks(rotation=45, ha='right', fontsize=12)
+
+# Mostrar gráfico
+plt.tight_layout()  # Ajustar el layout para evitar solapamiento
 plt.show()
