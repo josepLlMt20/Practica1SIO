@@ -4,26 +4,27 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="neighbourhoodsBCN.js"></script>
+    <script src="neighbourhoodsBCN.js"></script> <!-- Archivo GeoJSON de Barcelona -->
+    <script src="neighbourhoodsBerlin.js"></script> <!-- Archivo GeoJSON de Berlín -->
+    <script src="neighbourhoodsBUA.js"></script> <!-- Archivo GeoJSON de Buenos Aires -->
     <meta charset="UTF-8">
-    <title>Maps with Prices</title>
+    <title>Multi-City Maps with Prices</title>
 </head>
 <body>
     <div id="map" style="height: 100vh;"></div>
     <script>
-        // Crear el mapa centrado en Barcelona
-        var map = L.map('map').setView([41.380906, 2.122727], 12);
+        // Crear el mapa con vista global
+        var map = L.map('map').setView([20.0, 0.0], 2);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         // Función para calcular el precio promedio por barrio
-        function calculateAveragePricePerNeighbourhood(data) {
+        function calculateAveragePricePerNeighbourhood(data, neighbourhoodField) {
             var pricesByNeighbourhood = {};
 
-            // Agrupar precios por barrio
             data.forEach(function(entry) {
-                var neighbourhoodGroup = entry.neighbourhood_group_cleansed;
+                var neighbourhoodGroup = entry[neighbourhoodField]; // Ajustamos el campo según la ciudad
                 var price = parseFloat(entry.price);
 
                 if (!isNaN(price)) {
@@ -34,7 +35,6 @@
                 }
             });
 
-            // Calcular el promedio
             var averagePrices = {};
             for (var neighbourhood in pricesByNeighbourhood) {
                 var total = pricesByNeighbourhood[neighbourhood].reduce((sum, price) => sum + price, 0);
@@ -56,9 +56,9 @@
         }
 
         // Función para estilizar los barrios según el precio promedio
-        function style(feature, averagePrices) {
-            var price = averagePrices[feature.properties.neighbourhood_group] || 0;
-            console.log("Price for", feature.properties.neighbourhood_group, ":", price);
+        function style(feature, averagePrices, cityField) {
+            console.log("Barrio:", feature.properties[cityField], "Precio medio:", price);
+            var price = averagePrices[feature.properties[cityField]] || 0; // Ajustamos el campo según la ciudad
             return {
                 fillColor: getColor(price),
                 weight: 2,
@@ -69,23 +69,49 @@
             };
         }
 
-        // Cargar y procesar el archivo CSV con PapaParse
-        Papa.parse('CityFiles/barcelona/tarnsformado.csv', {
-            download: true,
-            header: true,
-            complete: function(results) {
-                // Calcular el precio promedio por barrio
-                var averagePrices = calculateAveragePricePerNeighbourhood(results.data);
+        // Crear capas para cada ciudad
+        var barcelonaLayer = L.layerGroup();
+        var berlinLayer = L.layerGroup();
+        var buenosAiresLayer = L.layerGroup();
 
-                // Añadir el GeoJSON de los barrios de Barcelona y aplicar el estilo según los precios promedio
-                L.geoJSON(geoJsonBCN, {
-                    style: function(feature) {
-                        console.log("Barrio:", feature.properties.neighbourhood_group_cleansed);
-                        return style(feature, averagePrices);
-                    }
-                }).addTo(map);
-            }
-        });
+        // Función para procesar cada ciudad
+        function processCity(csvUrl, geoJsonData, layerGroup, neighbourhoodFieldCsv, neighbourhoodFieldJson) {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                     console.log(results.data);
+                    var averagePrices = calculateAveragePricePerNeighbourhood(results.data, neighbourhoodFieldCsv); // Usamos el campo adecuado
+
+                    console.log(averagePrices);
+                    var geoLayer = L.geoJSON(geoJsonData, {
+                        style: function(feature) {
+                            return style(feature, averagePrices, neighbourhoodFieldJson); // Pasamos el campo adecuado
+                        }
+                    });
+
+                    layerGroup.addLayer(geoLayer);
+                }
+            });
+        }
+
+        // Cargar los datos y añadir a cada capa con los campos correctos para cada ciudad
+        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, barcelonaLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group');
+        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, berlinLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group');
+        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, buenosAiresLayer, 'neighbourhood_cleansed', 'neighbourhood');
+
+        // Añadir capas de ciudades al mapa
+        var overlayMaps = {
+            "Barcelona": barcelonaLayer,
+            "Berlin": berlinLayer,
+            "Buenos Aires": buenosAiresLayer
+        };
+
+        // Añadir control de capas
+        L.control.layers(null, overlayMaps).addTo(map);
+
+        // Activar la capa de Barcelona por defecto
+        barcelonaLayer.addTo(map);
     </script>
 </body>
 </html>
