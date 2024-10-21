@@ -47,11 +47,11 @@
 
         // Función para asignar colores según el precio promedio
         function getColor(d) {
-            return d > 200 ? '#800026' :
-                   d > 150 ? '#BD0026' :
-                   d > 100 ? '#E31A1C' :
-                   d > 50  ? '#FC4E2A' :
-                   d > 20  ? '#FD8D3C' :
+            return d > 300 ? '#800026' :
+                   d > 250 ? '#BD0026' :
+                   d > 200 ? '#E31A1C' :
+                   d > 150  ? '#FC4E2A' :
+                   d > 100  ? '#FD8D3C' :
                              '#FFEDA0';
         }
 
@@ -80,7 +80,7 @@
                 // Añadir el GeoJSON de los barrios de Barcelona y aplicar el estilo según los precios promedio
                 L.geoJSON(geoJsonBCN, {
                     style: function(feature) {
-                        console.log("Barrio:", feature.properties.name);
+                        console.log("Barrio:", feature.properties.neighbourhood_group_cleansed);
                         return style(feature, averagePrices);
                     }
                 }).addTo(map);
