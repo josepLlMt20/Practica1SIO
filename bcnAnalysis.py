@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt #per poder mostrar els grafics
+import matplotlib.pyplot as plt
 import seaborn as sns
 
-#Configurar pandas para mostrar todas las columnas
+# Configurar pandas para mostrar todas las columnas
 pd.set_option('display.max_columns', None)
 
-#Carregar les dades
+# Cargar los datos
 dataBcn = pd.read_csv("CityFiles/barcelona/listings.csv")
 
-# Eliminar las columnas no deseadas
+# Eliminar columnas irrelevantes
 columnas_a_eliminar = [
     'listing_url', 'scrape_id', 'last_scraped', 'source', 'neighborhood_overview',
     'host_url', 'host_name', 'host_since', 'host_location', 'host_about',
@@ -22,47 +22,34 @@ columnas_a_eliminar = [
     'calculated_host_listings_count', 'calculated_host_listings_count_entire_homes',
     'calculated_host_listings_count_private_rooms', 'calculated_host_listings_count_shared_rooms',
     'reviews_per_month', 'name', 'description', 'picture_url'
-
 ]
-
-#Eliminar columnas que son irrelevantes
 dataBcn.drop(columns=columnas_a_eliminar, axis=1, inplace=True)
 
+# Transformaciones de datos
+# Convertir precios y tasas a formato float
+dataBcn['price'] = dataBcn['price'].str.replace('$', '', regex=False).str.replace(',', '', regex=False).astype(float)
+dataBcn['host_response_rate'] = dataBcn['host_response_rate'].str.replace('%', '', regex=False).astype(float)
+dataBcn['host_acceptance_rate'] = dataBcn['host_acceptance_rate'].str.replace('%', '', regex=False).astype(float)
 
-#Parte transformación datos
-#Pasar a float
-dataBcn['price'] = dataBcn['price'].str.replace('$', '', regex=False)
-dataBcn['price'] = dataBcn['price'].str.replace(',', '', regex=False)
-dataBcn['price'] = dataBcn['price'].astype(float)
-dataBcn['host_response_rate'] = dataBcn['host_response_rate'].str.replace('%', '', regex=False)
-dataBcn['host_response_rate'] = dataBcn['host_response_rate'].astype(float)
-dataBcn['host_acceptance_rate'] = dataBcn['host_acceptance_rate'].str.replace('%', '', regex=False)
-dataBcn['host_acceptance_rate'] = dataBcn['host_acceptance_rate'].astype(float)
-
-#Pasar a boleano
+# Convertir a booleano
 dataBcn['host_identity_verified'] = dataBcn['host_identity_verified'].str.strip().replace({'t': True, 'f': False})
 dataBcn['instant_bookable'] = dataBcn['instant_bookable'].str.strip().replace({'t': True, 'f': False})
 
-#Transformar columna amenities en una lista
-dataBcn['amenities'] = dataBcn['amenities'].str.replace('{', '', regex=False)
-dataBcn['amenities'] = dataBcn['amenities'].str.replace('}', '', regex=False)
-dataBcn['amenities'] = dataBcn['amenities'].str.replace('"', '', regex=False)
-dataBcn['amenities'] = dataBcn['amenities'].str.split(',').apply(np.array)
+# Transformar columna amenities en una lista
+dataBcn['amenities'] = dataBcn['amenities'].str.replace('{', '', regex=False).str.replace('}', '', regex=False).str.replace('"', '', regex=False).str.split(',').apply(np.array)
 
+# Mostrar información de las columnas
+print(dataBcn[['price', 'host_response_rate', 'host_acceptance_rate', 'host_identity_verified', 'instant_bookable', 'amenities']].info())
 
-#Mostrar info de las columnas
-print(dataBcn[['price','host_response_rate','host_acceptance_rate','host_identity_verified','instant_bookable', 'amenities']].info())
+# Guardar los datos transformados
+dataBcn.to_csv("CityFiles/barcelona/transformado.csv", sep=';', index=True)
 
-#Guardar los datos transformados
-dataBcn.to_csv("CityFiles/barcelona/tarnsformado.csv", sep = ';', index=True)
+# Mostrar el dataset
+print(dataBcn.head())
 
-#Mostrar dataset
-#print(dataBcn.head())
-
-# Arrays con las listas de variables
+# Variables para análisis
 variables_numericas = [
-    'host_response_rate', 'host_acceptance_rate',
-    'host_total_listings_count', 'accommodates',
+    'host_response_rate', 'host_acceptance_rate', 'host_total_listings_count', 'accommodates',
     'bathrooms', 'bedrooms', 'beds', 'price', 'minimum_nights', 'maximum_nights',
     'minimum_nights_avg_ntm', 'maximum_nights_avg_ntm', 'availability_365',
     'number_of_reviews', 'review_scores_rating', 'review_scores_accuracy',
@@ -78,148 +65,158 @@ variables_categoricas = [
 variables_booleanas = [
     'host_identity_verified', 'instant_bookable'
 ]
-'''
-#Analisis variables numeriques
-#Estadisticas descriptivas
+
+# Análisis de variables numéricas
+# Estadísticas descriptivas
 data_numericas = dataBcn[variables_numericas]
 estadisticas_numericas = data_numericas.describe()
 print(estadisticas_numericas)
 
-
-
-#Distribución de las variables numéricas mas interesantes
-#Distribución de la variable price
+# Distribución de la variable 'price'
 plt.figure(figsize=(10, 6))
 sns.histplot(dataBcn['price'], bins=30, kde=True)
 plt.title('Distribución de la variable price')
-plt.xlabel('price')
+plt.xlabel('Price')
 plt.ylabel('Frecuencia')
 plt.show()
 
-#Distribución de la variable review_scores_rating
+# Distribución de 'review_scores_rating'
 plt.figure(figsize=(10, 6))
 sns.histplot(dataBcn['review_scores_rating'], bins=30, kde=True)
 plt.title('Distribución de la variable review_scores_rating')
-plt.xlabel('review_scores_rating')
+plt.xlabel('Rating')
 plt.ylabel('Frecuencia')
 plt.show()
 
-#Distribución de la variable availability_365
+# Distribución de 'availability_365'
 plt.figure(figsize=(10, 6))
 sns.histplot(dataBcn['availability_365'], bins=30, kde=True)
 plt.title('Distribución de la variable availability_365')
-plt.xlabel('availability_365')
+plt.xlabel('Availability 365')
 plt.ylabel('Frecuencia')
 plt.show()
 
-#Boxplot de la variable availability_365
+# Boxplot de 'availability_365'
 plt.figure(figsize=(10, 6))
 sns.boxplot(x=dataBcn['availability_365'])
 plt.title('Boxplot de la variable availability_365')
-plt.xlabel('availability_365')
+plt.xlabel('Availability 365')
 plt.show()
 
-#Distribución de la variable number_of_reviews
-plt.figure(figsize=(10, 6))
-sns.histplot(dataBcn['number_of_reviews'], bins=30, kde=True)
-plt.title('Distribución de la variable number_of_reviews')
-plt.xlabel('number_of_reviews')
-plt.ylabel('Frecuencia')
-plt.show()
+# Eliminar outliers en 'price'
+lower_bound_price = dataBcn['price'].quantile(0.01)
+upper_bound_price = dataBcn['price'].quantile(0.99)
+data_filtered_price = dataBcn[(dataBcn['price'] >= lower_bound_price) & (dataBcn['price'] <= upper_bound_price)]
 
-##QUITAR OUTLIERS DE LA VARIABLE PRICE
-#Filtrar eliminando outliers usando los percentiles
-lower_bound = dataBcn['price'].quantile(0.01)  # 1er percentil
-upper_bound = dataBcn['price'].quantile(0.99)  # 99º percentil
-
-# Crear un nuevo dataframe sin outliers
-data_filtered = dataBcn[(dataBcn['price'] >= lower_bound) & (dataBcn['price'] <= upper_bound)]
-
-# Representación gráfica sin outliers
-sns.histplot(data_filtered['price'], kde=True)
+# Representación gráfica sin outliers de 'price'
+sns.histplot(data_filtered_price['price'], kde=True)
 plt.title('Distribución de la variable price sin outliers')
-plt.xlabel('price')
+plt.xlabel('Price')
 plt.ylabel('Frecuencia')
 plt.show()
 
-print(data_filtered['price'].describe())
-
-#Boxplot de la variable price
-plt.figure(figsize=(10, 6))
-sns.boxplot(x=dataBcn['price'])
-plt.title('Boxplot de la variable price')
-plt.xlabel('price')
-plt.show()
-
-#boxplot de la variable number_of_reviews
-plt.figure(figsize=(10, 6))
-sns.boxplot(x=dataBcn['number_of_reviews'])
-plt.title('Boxplot de la variable number_of_reviews')
-plt.xlabel('number_of_reviews')
-plt.show()
-
-#Histograma de la variable number_of_reviews
-plt.figure(figsize=(10, 6))
-sns.histplot(dataBcn['number_of_reviews'], bins=30, kde=True)
-plt.title('Distribución de la variable number_of_reviews')
-plt.xlabel('number_of_reviews')
-plt.ylabel('Frecuencia')
-plt.show()
-
-#QUITAR OUTLIERS DE LA VARIABLE number_of_reviews
-#Filtrar eliminando outliers usando los percentiles
-lower_bound = dataBcn['number_of_reviews'].quantile(0.25)  # 1er quartil
-upper_bound = dataBcn['number_of_reviews'].quantile(0.75)  # 3 quartil
-
-# Crear un nuevo dataframe sin outliers
-data_filtered = dataBcn[(dataBcn['number_of_reviews'] >= lower_bound) & (dataBcn['number_of_reviews'] <= upper_bound)]
-
-# Representación gráfica sin outliers
-sns.histplot(data_filtered['number_of_reviews'], kde=True)
-plt.title('Distribución de la variable number_of_reviews sin outliers')
-plt.xlabel('number_of_reviews')
-plt.ylabel('Frecuencia')
-plt.show()
-
-# Representació histograma de la variable accommodates
-plt.figure(figsize=(10, 6))
-sns.histplot(dataBcn['accommodates'], bins=15, kde=True)
-plt.title('Distribución de la variable accommodates')
-plt.xlabel('accommodates')
-plt.ylabel('Frecuencia')
-plt.show()
-'''
-
-
-#Analisis variables categoricas
-#Estadisticas descriptivas
+# Análisis de variables categóricas
 data_categoricas = dataBcn[variables_categoricas]
 
-frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts()  # Frecuencia absoluta
-relative_frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts(normalize=True)  # Frecuencia relativa
-percentage = relative_frequencies * 100  # Porcentaje
-
-# Crear un DataFrame con estos valores
+# Frecuencias y porcentaje de 'neighbourhood_group_cleansed'
+frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts()
+relative_frequencies = data_categoricas['neighbourhood_group_cleansed'].value_counts(normalize=True) * 100
 tabla_frecuencias = pd.DataFrame({
     'Frecuencia': frequencies,
-    'Frecuencia Relativa': relative_frequencies,
-    'Porcentaje (%)': percentage
+    'Porcentaje (%)': relative_frequencies
 })
-
-# Mostrar la tabla
 print(tabla_frecuencias)
 
-# Representación gráfica de la variable neighbourhood_group_cleansed
+# Representación gráfica de 'neighbourhood_group_cleansed'
 plt.figure(figsize=(10, 6))
 sns.countplot(x='neighbourhood_group_cleansed', data=data_categoricas)
 plt.title('Distribución de la variable neighbourhood_group_cleansed')
-plt.xlabel('neighbourhood_group_cleansed')
+plt.xlabel('Neighbourhood Group')
 plt.ylabel('Frecuencia')
 plt.xticks(rotation=45)
 plt.show()
 
-
+# Pie chart de 'neighbourhood_group_cleansed'
 data_categoricas['neighbourhood_group_cleansed'].value_counts().plot.pie(autopct='%1.1f%%')
 plt.title('Distribución de la variable neighbourhood_group_cleansed')
 plt.ylabel('')
 plt.show()
+
+# Neighbourhoods vs Price
+# Generar el boxplot con la variable price sin outliers
+plt.figure(figsize=(15, 12))
+sns.boxplot(x='neighbourhood_group_cleansed', y='price', data=data_filtered_price)
+plt.title('Comparación de Price sin outliers vs Neighbourhood Group Cleansed')
+plt.xlabel('Neighbourhood Group Cleansed')
+plt.ylabel('Price')
+plt.xticks(rotation=45)  # Rotar las etiquetas del eje X si es necesario
+plt.show()
+
+# Availability vs Price
+# Generar el scatter plot de availability_365 vs price
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='price', y='availability_365', data=data_filtered_price)
+plt.title('Scatter plot de Availability 365 vs Price')
+plt.xlabel('Price')
+plt.ylabel('Availability 365')
+plt.show()
+correlation = data_filtered_price['price'].corr(data_filtered_price['availability_365'])
+print(f'La correlación de Pearson entre Price y availability es: {correlation}')
+
+# Price vs Review Scores Rating
+# Crear el scatter plot de Price vs review_scores_rating
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='price', y='review_scores_rating', data=data_filtered_price)
+plt.title('Scatter plot de Price vs Review Scores Rating')
+plt.xlabel('Price')
+plt.ylabel('Review Scores Rating')
+plt.show()
+
+correlation = data_filtered_price['price'].corr(data_filtered_price['review_scores_rating'])
+print(f'La correlación de Pearson entre Price y Review Scores Rating es: {correlation}')
+
+# Property Type vs Neighbourhood Group Cleansed
+# Crear una tabla de frecuencia de Property Type vs Neighbourhood Group Cleansed
+property_neighbourhood_table = pd.crosstab(dataBcn['property_type'], dataBcn['neighbourhood_group_cleansed'])
+
+# Crear el heatmap
+plt.figure(figsize=(20, 15))
+sns.heatmap(property_neighbourhood_table, cmap='Blues', annot=False, linewidths=0.5)
+
+# Personalizar el gráfico
+plt.title('Heatmap de Property Type vs Neighbourhood Group Cleansed')
+plt.xlabel('Neighbourhood Group Cleansed')
+plt.ylabel('Property Type')
+plt.xticks(rotation=90)  # Rotar etiquetas del eje X si es necesario
+plt.show()
+
+# Crear el gráfico boxplot
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='instant_bookable', y='availability_365', data=dataBcn)
+plt.title('Instant Bookable vs Availability 365')
+plt.xlabel('Instant Bookable')
+plt.ylabel('Availability 365 (días)')
+plt.show()
+
+# instant_bookable vs price
+plt.figure(figsize=(10, 6))
+sns.boxplot(x='instant_bookable', y='price', data=data_filtered_price)
+plt.title('Instant Bookable vs price')
+plt.xlabel('Instant Bookable')
+plt.ylabel('Price')
+plt.show()
+
+# Avaibility vs property_type
+top10_PropertyType = dataBcn['property_type'].value_counts().head(10).index
+top10PT = dataBcn[dataBcn['property_type'].isin(top10_PropertyType)]
+
+
+
+plt.figure(figsize=(15, 10))
+sns.barplot(x='availability_365', y='property_type', data=top10PT)
+plt.title('Property Type vs Availability 365')
+plt.xlabel('Availability 365')
+plt.ylabel('Property Type')
+plt.show()
+
+
