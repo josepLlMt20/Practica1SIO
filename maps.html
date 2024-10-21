@@ -5,51 +5,87 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="neighbourhoodsBCN.js"></script>
-    <script src="neighbourhoodsBerlin.js"></script>
-    <script src="neighbourhoodsBUA.js"></script>
     <meta charset="UTF-8">
-    <title>Maps</title>
+    <title>Maps with Prices</title>
 </head>
 <body>
     <div id="map" style="height: 100vh;"></div>
     <script>
-
+        // Crear el mapa centrado en Barcelona
         var map = L.map('map').setView([41.380906, 2.122727], 12);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-        L.marker([41.380906, 2.122727]).addTo(map)
-            .bindPopup(':)')
-            .openPopup();
-        L.geoJSON(geoJsonBCN).addTo(map);
-        L.geoJSON(geoJsonBerlin).addTo(map);
-        L.geoJSON(geoJsonBuenosAires).addTo(map);
 
-         // Función para agregar marcadores de Airbnb en el mapa
-        function addMarkers(data) {
-            data.forEach(function(airbnb) {
-                var lat = parseFloat(airbnb.latitude);
-                var lon = parseFloat(airbnb.longitude);
+        // Función para calcular el precio promedio por barrio
+        function calculateAveragePricePerNeighbourhood(data) {
+            var pricesByNeighbourhood = {};
 
-                // Si las coordenadas son válidas, agregar el marcador
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    L.marker([lat, lon]).addTo(map)
-                        .bindPopup('Airbnb Location')
-                        .openPopup();
+            // Agrupar precios por barrio
+            data.forEach(function(entry) {
+                var neighbourhoodGroup = entry.neighbourhood_group_cleansed;
+                var price = parseFloat(entry.price);
+
+                if (!isNaN(price)) {
+                    if (!pricesByNeighbourhood[neighbourhoodGroup]) {
+                        pricesByNeighbourhood[neighbourhoodGroup] = [];
+                    }
+                    pricesByNeighbourhood[neighbourhoodGroup].push(price);
                 }
             });
+
+            // Calcular el promedio
+            var averagePrices = {};
+            for (var neighbourhood in pricesByNeighbourhood) {
+                var total = pricesByNeighbourhood[neighbourhood].reduce((sum, price) => sum + price, 0);
+                var count = pricesByNeighbourhood[neighbourhood].length;
+                averagePrices[neighbourhood] = total / count;
+            }
+
+            return averagePrices;
         }
 
-        // Cargar y parsear el archivo CSV
-        Papa.parse('CityFiles/buenos aires/listings.csv', {
+        // Función para asignar colores según el precio promedio
+        function getColor(d) {
+            return d > 200 ? '#800026' :
+                   d > 150 ? '#BD0026' :
+                   d > 100 ? '#E31A1C' :
+                   d > 50  ? '#FC4E2A' :
+                   d > 20  ? '#FD8D3C' :
+                             '#FFEDA0';
+        }
+
+        // Función para estilizar los barrios según el precio promedio
+        function style(feature, averagePrices) {
+            var price = averagePrices[feature.properties.neighbourhood_group] || 0;
+            console.log("Price for", feature.properties.neighbourhood_group, ":", price);
+            return {
+                fillColor: getColor(price),
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+
+        // Cargar y procesar el archivo CSV con PapaParse
+        Papa.parse('CityFiles/barcelona/tarnsformado.csv', {
             download: true,
-            header: true,  // Para que lea los nombres de las columnas
+            header: true,
             complete: function(results) {
-                // results.data contiene los datos del archivo CSV
-                addMarkers(results.data);
+                // Calcular el precio promedio por barrio
+                var averagePrices = calculateAveragePricePerNeighbourhood(results.data);
+
+                // Añadir el GeoJSON de los barrios de Barcelona y aplicar el estilo según los precios promedio
+                L.geoJSON(geoJsonBCN, {
+                    style: function(feature) {
+                        console.log("Barrio:", feature.properties.name);
+                        return style(feature, averagePrices);
+                    }
+                }).addTo(map);
             }
         });
-
     </script>
 </body>
 </html>
