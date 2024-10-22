@@ -19,7 +19,7 @@ columnas_a_eliminar = [
     'number_of_reviews_ltm', 'first_review', 'last_review', 'license',
     'calculated_host_listings_count', 'calculated_host_listings_count_entire_homes',
     'calculated_host_listings_count_private_rooms', 'calculated_host_listings_count_shared_rooms',
-    'reviews_per_month', 'name', 'description', 'picture_url'
+    'reviews_per_month', 'description'
 ]
 
 
