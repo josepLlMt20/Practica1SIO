@@ -13,18 +13,16 @@
 <body>
     <div id="map" style="height: 100vh;"></div>
     <script>
-        // Crear el mapa con vista global
         var map = L.map('map').setView([20.0, 0.0], 2);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Función para calcular el precio promedio por barrio
         function calculateAveragePricePerNeighbourhood(data, neighbourhoodField) {
             var pricesByNeighbourhood = {};
 
             data.forEach(function(entry) {
-                var neighbourhoodGroup = entry[neighbourhoodField]; // Ajustamos el campo según la ciudad
+                var neighbourhoodGroup = entry[neighbourhoodField];
                 var price = parseFloat(entry.price);
 
                 if (!isNaN(price)) {
@@ -45,24 +43,32 @@
             return averagePrices;
         }
 
-        // Función para asignar colores según el precio promedio
-        function getColor(d) {
-            return d > 300 ? '#800026' :
-                   d > 250 ? '#BD0026' :
-                   d > 200 ? '#E31A1C' :
-                   d > 150  ? '#FC4E2A' :
-                   d > 100  ? '#FD8D3C' :
-                             '#FFEDA0';
+        // Modificar para aceptar ciudad como argumento
+        function getColor(d, city) {
+            if (city === "Buenos Aires") {
+                return d > 18000 ? '#800026' :
+                       d > 4000 ? '#BD0026' :
+                       d > 3000 ? '#E31A1C' :
+                       d > 2000 ? '#FC4E2A' :
+                       d > 1000 ? '#FD8D3C' :
+                                  '#FFEDA0';
+            } else {
+                return d > 300 ? '#800026' :
+                       d > 250 ? '#BD0026' :
+                       d > 200 ? '#E31A1C' :
+                       d > 150  ? '#FC4E2A' :
+                       d > 100  ? '#FD8D3C' :
+                                  '#FFEDA0';
+            }
         }
 
-        // Función para estilizar los barrios según el precio promedio
-        function style(feature, averagePrices, cityField) {
+        function style(feature, averagePrices, cityField, city) {
             var price = averagePrices[feature.properties[cityField]];
             if (typeof price === 'undefined') {
                 price = 0; // Asignar 0 si no hay precio disponible
             }
             return {
-                fillColor: getColor(price),
+                fillColor: getColor(price, city),
                 weight: 2,
                 opacity: 1,
                 color: 'white',
@@ -71,24 +77,22 @@
             };
         }
 
-        // Crear capas para cada ciudad
         var barcelonaLayer = L.layerGroup();
         var berlinLayer = L.layerGroup();
         var buenosAiresLayer = L.layerGroup();
 
-        // Función para procesar cada ciudad
-        function processCity(csvUrl, geoJsonData, layerGroup, neighbourhoodFieldCsv, neighbourhoodFieldJson) {
+        function processCity(csvUrl, geoJsonData, layerGroup, neighbourhoodFieldCsv, neighbourhoodFieldJson, cityName) {
             Papa.parse(csvUrl, {
                 download: true,
                 header: true,
                 complete: function(results) {
-                     console.log(results.data);
-                    var averagePrices = calculateAveragePricePerNeighbourhood(results.data, neighbourhoodFieldCsv); // Usamos el campo adecuado
+                    console.log(results.data);
+                    var averagePrices = calculateAveragePricePerNeighbourhood(results.data, neighbourhoodFieldCsv);
 
                     console.log(averagePrices);
                     var geoLayer = L.geoJSON(geoJsonData, {
                         style: function(feature) {
-                            return style(feature, averagePrices, neighbourhoodFieldJson); // Pasamos el campo adecuado
+                            return style(feature, averagePrices, neighbourhoodFieldJson, cityName); // Pasamos la ciudad
                         }
                     });
 
@@ -97,22 +101,18 @@
             });
         }
 
-        // Cargar los datos y añadir a cada capa con los campos correctos para cada ciudad
-        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, barcelonaLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group');
-        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, berlinLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group');
-        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, buenosAiresLayer, 'neighbourhood_cleansed', 'neighbourhood');
+        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, barcelonaLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Barcelona');
+        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, berlinLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Berlin');
+        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, buenosAiresLayer, 'neighbourhood_cleansed', 'neighbourhood', 'Buenos Aires');
 
-        // Añadir capas de ciudades al mapa
         var overlayMaps = {
             "Barcelona": barcelonaLayer,
             "Berlin": berlinLayer,
             "Buenos Aires": buenosAiresLayer
         };
 
-        // Añadir control de capas
         L.control.layers(null, overlayMaps).addTo(map);
 
-        // Activar las tres capas por defecto
         barcelonaLayer.addTo(map);
         berlinLayer.addTo(map);
         buenosAiresLayer.addTo(map);
