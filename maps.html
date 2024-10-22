@@ -57,8 +57,10 @@
 
         // Función para estilizar los barrios según el precio promedio
         function style(feature, averagePrices, cityField) {
-            console.log("Barrio:", feature.properties[cityField], "Precio medio:", price);
-            var price = averagePrices[feature.properties[cityField]] || 0; // Ajustamos el campo según la ciudad
+            var price = averagePrices[feature.properties[cityField]];
+            if (typeof price === 'undefined') {
+                price = 0; // Asignar 0 si no hay precio disponible
+            }
             return {
                 fillColor: getColor(price),
                 weight: 2,
@@ -110,8 +112,10 @@
         // Añadir control de capas
         L.control.layers(null, overlayMaps).addTo(map);
 
-        // Activar la capa de Barcelona por defecto
+        // Activar las tres capas por defecto
         barcelonaLayer.addTo(map);
+        berlinLayer.addTo(map);
+        buenosAiresLayer.addTo(map);
     </script>
 </body>
 </html>

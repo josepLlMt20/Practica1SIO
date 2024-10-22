@@ -1,17 +1,11 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt #per poder mostrar els grafics
-
-# Configurar pandas para mostrar todas las columnas
-#pd.set_option('display.max_columns', None)
-
-#Carregar les dades
-dataBcn = pd.read_csv("CityFiles/barcelona/listings.csv")
-dataBer = pd.read_csv("CityFiles/berlin/listings.csv")
-dataBuAr = pd.read_csv("CityFiles/buenos aires/listings.csv")
+import matplotlib.pyplot as plt  # para poder mostrar los gráficos
 
 # Cargar los datos
 dataBcn = pd.read_csv("CityFiles/barcelona/listings.csv")
+dataBer = pd.read_csv("CityFiles/berlin/listings.csv")
+dataBuAr = pd.read_csv("CityFiles/buenos aires/listings.csv")
 
 # Eliminar columnas irrelevantes
 columnas_a_eliminar = [
@@ -27,11 +21,25 @@ columnas_a_eliminar = [
     'calculated_host_listings_count_private_rooms', 'calculated_host_listings_count_shared_rooms',
     'reviews_per_month', 'name', 'description', 'picture_url'
 ]
-dataBcn.drop(columns=columnas_a_eliminar, axis=1, inplace=True)
-dataBer.drop(columns=columnas_a_eliminar, axis=1, inplace=True)
-dataBuAr.drop(columns=columnas_a_eliminar, axis=1, inplace=True)
 
-dataBcn.to_csv("CityFiles/barcelona/transformado.csv", sep=';', index=True)
-dataBuAr.to_csv("CityFiles/buenos aires/transformado.csv", sep=';', index=True)
-dataBer.to_csv("CityFiles/berlin/transformado.csv", sep=';', index=True)
 
+# Limpiar y procesar cada conjunto de datos
+def procesar_datos(data):
+    # Eliminar columnas irrelevantes
+    data.drop(columns=columnas_a_eliminar, axis=1, inplace=True)
+
+    # Eliminar caracteres no numéricos de la columna price y convertir a float
+    data['price'] = pd.to_numeric(data['price'].replace(r'[\$,]', '', regex=True), errors='coerce')
+
+    return data
+
+
+# Procesar los datos de cada ciudad
+dataBcn = procesar_datos(dataBcn)
+dataBer = procesar_datos(dataBer)
+dataBuAr = procesar_datos(dataBuAr)
+
+# Guardar los archivos transformados
+dataBcn.to_csv("CityFiles/barcelona/transformado.csv", sep=';', index=False)
+dataBuAr.to_csv("CityFiles/buenos aires/transformado.csv", sep=';', index=False)
+dataBer.to_csv("CityFiles/berlin/transformado.csv", sep=';', index=False)
