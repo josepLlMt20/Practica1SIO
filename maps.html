@@ -49,11 +49,11 @@
 
         function getColor(d, city) {
             if (city === "Buenos Aires") {
-                return d > 5000 ? '#800026' :
-                       d > 4000 ? '#BD0026' :
-                       d > 3000 ? '#E31A1C' :
-                       d > 2000 ? '#FC4E2A' :
-                       d > 1000 ? '#FD8D3C' :
+                return d > 250000 ? '#800026' :
+                       d > 200000 ? '#BD0026' :
+                       d > 150000 ? '#E31A1C' :
+                       d > 100000 ? '#FC4E2A' :
+                       d > 50000 ? '#FD8D3C' :
                                   '#FFEDA0';
             } else {
                 return d > 300 ? '#800026' :
@@ -80,63 +80,53 @@
             };
         }
 
-        var barcelonaLayer = L.layerGroup();
-        var berlinLayer = L.layerGroup();
-        var buenosAiresLayer = L.layerGroup();
-
         // Crear grupos de clústeres para cada ciudad
-        var barcelonaCluster = L.markerClusterGroup();
-        var berlinCluster = L.markerClusterGroup();
-        var buenosAiresCluster = L.markerClusterGroup();
+        var airbnbCluster = L.markerClusterGroup();
+        var geoLayerGroup = L.layerGroup(); // Grupo para las capas de precios promedio
 
-        function processCity(csvUrl, geoJsonData, layerGroup, neighbourhoodFieldCsv, neighbourhoodFieldJson, cityName, airbnbCluster) {
+        function processCity(csvUrl, geoJsonData, neighbourhoodFieldCsv, neighbourhoodFieldJson, cityName) {
             Papa.parse(csvUrl, {
                 download: true,
                 header: true,
                 complete: function(results) {
-                    console.log(results.data);
                     var averagePrices = calculateAveragePricePerNeighbourhood(results.data, neighbourhoodFieldCsv);
 
-                    console.log(averagePrices);
+                    // Añadir capa GeoJSON al grupo
                     var geoLayer = L.geoJSON(geoJsonData, {
                         style: function(feature) {
                             return style(feature, averagePrices, neighbourhoodFieldJson, cityName);
                         }
                     });
 
-                    layerGroup.addLayer(geoLayer);
+                    geoLayerGroup.addLayer(geoLayer);
 
-                    // Añadir marcadores a clúster en lugar de individualmente al mapa
+                    // Añadir marcadores a clúster
                     results.data.forEach(function(entry) {
                         var lat = parseFloat(entry.latitude);
                         var lon = parseFloat(entry.longitude);
                         if (!isNaN(lat) && !isNaN(lon)) {
                             var marker = L.marker([lat, lon]).bindPopup(`Price: $${entry.price}`);
-                            airbnbCluster.addLayer(marker); // Añadir al clúster en lugar de una capa normal
+                            airbnbCluster.addLayer(marker);
                         }
                     });
                 }
             });
         }
 
-        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, barcelonaLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Barcelona', barcelonaCluster);
-        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, berlinLayer, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Berlin', berlinCluster);
-        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, buenosAiresLayer, 'neighbourhood_cleansed', 'neighbourhood', 'Buenos Aires', buenosAiresCluster);
+        // Procesar las ciudades
+        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Barcelona');
+        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Berlin');
+        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, 'neighbourhood_cleansed', 'neighbourhood', 'Buenos Aires');
 
+        // Añadir capas al mapa y controles de capa
         var overlayMaps = {
-            "Barcelona": barcelonaLayer,
-            "Berlin": berlinLayer,
-            "Buenos Aires": buenosAiresLayer,
-            "Airbnbs Barcelona": barcelonaCluster,
-            "Airbnbs Berlin": berlinCluster,
-            "Airbnbs Buenos Aires": buenosAiresCluster
+            "Average Prices": geoLayerGroup,
+            "Airbnbs": airbnbCluster
         };
 
         L.control.layers(null, overlayMaps).addTo(map);
-
-        barcelonaLayer.addTo(map);
-        berlinLayer.addTo(map);
-        buenosAiresLayer.addTo(map);
+        geoLayerGroup.addTo(map); // Añadir capa de precios promedio al mapa
+        airbnbCluster.addTo(map); // Añadir capa de clúster de Airbnb al mapa
     </script>
 </body>
 </html>
