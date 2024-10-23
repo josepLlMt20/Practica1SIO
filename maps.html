@@ -4,61 +4,113 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />  <!-- Leaflet Clusters -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>  <!-- Leaflet Marcadors -->
     <script src="neighbourhoodsBCN.js"></script>
+    <script src="neighbourhoodsBerlin.js"></script>
+    <script src="neighbourhoodsBUA.js"></script>
     <meta charset="UTF-8">
-    <title>Maps with Prices</title>
+    <title>Mapa interactiu - FASE 2</title>
 </head>
 <body>
     <div id="map" style="height: 100vh;"></div>
     <script>
-        // Crear el mapa centrado en Barcelona
-        var map = L.map('map').setView([41.380906, 2.122727], 12);
+        var map = L.map('map').setView([20.0, 0.0], 2); //inicialització mapa
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         // Función para calcular el precio promedio por barrio
-        function calculateAveragePricePerNeighbourhood(data) {
-            var pricesByNeighbourhood = {};
-
-            // Agrupar precios por barrio
+        function avgPriceBarri(data, neighbourhoodField) {
+            var preuBarri = {};
             data.forEach(function(entry) {
-                var neighbourhoodGroup = entry.neighbourhood_group_cleansed;
-                var price = parseFloat(entry.price);
-
+                var neighbourhoodGroup = entry[neighbourhoodField]; //seleccionar barri
+                var price = parseFloat(entry.price); //tranformar a float preu
                 if (!isNaN(price)) {
-                    if (!pricesByNeighbourhood[neighbourhoodGroup]) {
-                        pricesByNeighbourhood[neighbourhoodGroup] = [];
+                    if (!preuBarri[neighbourhoodGroup]) {
+                        preuBarri[neighbourhoodGroup] = []; //inicialitzar si no existeix encara el barri
                     }
-                    pricesByNeighbourhood[neighbourhoodGroup].push(price);
+                    preuBarri[neighbourhoodGroup].push(price); //afegir preu al barri
                 }
             });
 
-            // Calcular el promedio
             var averagePrices = {};
-            for (var neighbourhood in pricesByNeighbourhood) {
-                var total = pricesByNeighbourhood[neighbourhood].reduce((sum, price) => sum + price, 0);
-                var count = pricesByNeighbourhood[neighbourhood].length;
-                averagePrices[neighbourhood] = total / count;
+            for (var neighbourhood in preuBarri) { //bucle per treure la mitja
+                var total = preuBarri[neighbourhood].reduce((sum, price) => sum + price, 0); //suma total de preus
+                var totalPreus = preuBarri[neighbourhood].length; //total num preus
+                averagePrices[neighbourhood] = total / totalPreus;
             }
 
             return averagePrices;
         }
 
-        // Función para asignar colores según el precio promedio
-        function getColor(d) {
-            return d > 300 ? '#800026' :
-                   d > 250 ? '#BD0026' :
-                   d > 200 ? '#E31A1C' :
-                   d > 150  ? '#FC4E2A' :
-                   d > 100  ? '#FD8D3C' :
-                             '#FFEDA0';
+        // Nueva función para calcular la disponibilidad promedio por barrio
+        function avgAvailabilityBarri(data, neighbourhoodField) {
+            var availabilityBarri = {};
+            data.forEach(function(entry) {
+                var neighbourhoodGroup = entry[neighbourhoodField]; //seleccionar barri
+                var availability = parseInt(entry.availability_365, 10); // transformar a integer
+                if (!isNaN(availability)) {
+                    if (!availabilityBarri[neighbourhoodGroup]) {
+                        availabilityBarri[neighbourhoodGroup] = []; //inicialitzar si no existeix encara el barri
+                    }
+                    availabilityBarri[neighbourhoodGroup].push(availability); //afegir disponibilitat al barri
+                }
+            });
+
+            var averageAvailability = {};
+            for (var neighbourhood in availabilityBarri) { //bucle per treure la mitja
+                var total = availabilityBarri[neighbourhood].reduce((sum, avail) => sum + avail, 0); //suma total de disponibilitat
+                var totalAvail = availabilityBarri[neighbourhood].length; //total num disponibilitat
+                averageAvailability[neighbourhood] = total / totalAvail;
+            }
+
+            return averageAvailability;
         }
 
-        // Función para estilizar los barrios según el precio promedio
-        function style(feature, averagePrices) {
-            var price = averagePrices[feature.properties.neighbourhood_group] || 0;
-            console.log("Price for", feature.properties.neighbourhood_group, ":", price);
+        // Función para determinar el color según el precio
+        function getColor(price) {
+            return price > 300 ? '#800026' : // Rojo oscuro
+                   price > 250 ? '#BD0026' : // Rojo
+                   price > 200 ? '#E31A1C' : // Rojo claro
+                   price > 150 ? '#FC4E2A' : // Naranja
+                   price > 100 ? '#FD8D3C' : // Amarillo
+                   '#FFEDA0'; // Amarillo muy claro
+        }
+
+        // Función para determinar el color según la disponibilidad (verdes oscuros)
+        function getAvailabilityColor(availability) {
+            return availability > 300 ? '#033303' : // Verde oscuro
+                   availability > 250 ? '#003600' : // Verde
+                   availability > 200 ? '#0e380e' : // Verde medio
+                   availability > 150 ? '#0a4d0a' : // Verde claro
+                   availability > 100 ? '#017301' : // Verde más claro
+                   '#00ff00'; // Verde muy claro
+        }
+
+        // Modificación de la función style para usar disponibilidad
+        function styleAvailability(feature, averageAvailability, neighbourhoodField) {
+            var availability = averageAvailability[feature.properties[neighbourhoodField]];
+            if (typeof availability === 'undefined') {
+                availability = 0;
+            }
+            return {
+                fillColor: getAvailabilityColor(availability),
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+
+        // Modificación de la función style para usar precio
+        function stylePrice(feature, averagePrices, neighbourhoodField) {
+            var price = averagePrices[feature.properties[neighbourhoodField]];
+            if (typeof price === 'undefined') {
+                price = 0;
+            }
             return {
                 fillColor: getColor(price),
                 weight: 2,
@@ -69,23 +121,73 @@
             };
         }
 
-        // Cargar y procesar el archivo CSV con PapaParse
-        Papa.parse('CityFiles/barcelona/tarnsformado.csv', {
-            download: true,
-            header: true,
-            complete: function(results) {
-                // Calcular el precio promedio por barrio
-                var averagePrices = calculateAveragePricePerNeighbourhood(results.data);
+        var airbnbCluster = L.markerClusterGroup(); //Capa cluster
+        var geoLayerGroup = L.layerGroup(); //Capa precio medio
+        var availabilityLayerGroup = L.layerGroup(); //Capa disponibilidad
 
-                // Añadir el GeoJSON de los barrios de Barcelona y aplicar el estilo según los precios promedio
-                L.geoJSON(geoJsonBCN, {
-                    style: function(feature) {
-                        console.log("Barrio:", feature.properties.neighbourhood_group_cleansed);
-                        return style(feature, averagePrices);
-                    }
-                }).addTo(map);
-            }
-        });
+        function processCity(csvUrl, geoJsonData, neighbourhoodFieldCsv, neighbourhoodFieldJson, cityName) {
+            Papa.parse(csvUrl, {
+                download: true,
+                header: true,
+                complete: function(results) { //results conte cada fila del csv
+                    // Parte barris pintats segons preu mig
+                    var averagePrices = avgPriceBarri(results.data, neighbourhoodFieldCsv);
+                    var geoLayer = L.geoJSON(geoJsonData, {
+                        style: function(feature) {
+                            return stylePrice(feature, averagePrices, neighbourhoodFieldJson); // Pintar segons preu mig i ciutat
+                        }
+                    });
+
+                    geoLayerGroup.addLayer(geoLayer);
+
+                    // Parte de disponibilidad
+                    var averageAvailability = avgAvailabilityBarri(results.data, neighbourhoodFieldCsv);
+                    var availabilityLayer = L.geoJSON(geoJsonData, {
+                        style: function(feature) {
+                            return styleAvailability(feature, averageAvailability, neighbourhoodFieldJson); // Pintar segons disponibilitat
+                        }
+                    });
+
+                    availabilityLayerGroup.addLayer(availabilityLayer);
+
+                    // Parte cluster
+                    results.data.forEach(function(entry) {
+                        var lat = parseFloat(entry.latitude);
+                        var lon = parseFloat(entry.longitude);
+                        var marker;
+                        if (!isNaN(lat) && !isNaN(lon)) { // Comprovar que no son nul·les
+                            var popupContent = `
+                                <div style="text-align: center;">
+                                    <img src="${entry.picture_url}" alt="${entry.name}" style="width: 100%; height: auto;"/>
+                                    <h4>${entry.name}</h4>
+                                    <p>Price: ${entry.price} ${geoJsonData === geoJsonBuenosAires ? 'ARS' : '€'}</p>
+                                </div>
+                            `;
+                            marker = L.marker([lat, lon]).bindPopup(popupContent); // Marcador de preu
+                            airbnbCluster.addLayer(marker); // Aqui es on s'afegeix al cluster gràcies a leaflet
+                        }
+                    });
+                }
+            });
+        }
+
+        // Afegir JSON, CSV, indicant el camp que relaciona el JSON amb el csv
+        processCity('CityFiles/barcelona/transformado.csv', geoJsonBCN, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Barcelona');
+        processCity('CityFiles/berlin/transformado.csv', geoJsonBerlin, 'neighbourhood_group_cleansed', 'neighbourhood_group', 'Berlin');
+        processCity('CityFiles/buenos aires/transformado.csv', geoJsonBuenosAires, 'neighbourhood_cleansed', 'neighbourhood', 'Buenos Aires');
+
+        // Control de capes
+        var overlayMaps = {
+            "Average Prices": geoLayerGroup,
+            "Availability": availabilityLayerGroup,
+            "Airbnbs": airbnbCluster
+        };
+        L.control.layers(null, overlayMaps).addTo(map);
+
+        // Iniciar amb totes dues activades
+        geoLayerGroup.addTo(map);
+        availabilityLayerGroup.addTo(map); // Añadido para mostrar la capa de disponibilidad
+        airbnbCluster.addTo(map);
     </script>
 </body>
 </html>
