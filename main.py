@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt #per poder mostrar els grafics
 #Carregar les dades
 dataBcn = pd.read_csv("CityFiles/barcelona/listings.csv")
 dataBer = pd.read_csv("CityFiles/berlin/listings.csv")
-dataBuAr = pd.read_csv("CityFiles/buenos aires/listings.csv")
+dataBuAr = pd.read_csv("CityFiles/buenos_aires/listings.csv")
 
 print(dataBcn.head())
 print(dataBcn.info())

@@ -10,7 +10,7 @@ import seaborn as sns
 pd.set_option('display.max_columns', None)
 
 #Carregar les dades
-dataBuAr = pd.read_csv("CityFiles/buenos aires/listings.csv")
+dataBuAr = pd.read_csv("CityFiles/buenos_aires/listings.csv")
 
 
 columns_to_drop = [
