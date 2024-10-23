@@ -1,3 +1,5 @@
+import ast
+from collections import defaultdict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -210,8 +212,6 @@ plt.show()
 top10_PropertyType = dataBcn['property_type'].value_counts().head(10).index
 top10PT = dataBcn[dataBcn['property_type'].isin(top10_PropertyType)]
 
-
-
 plt.figure(figsize=(15, 10))
 sns.barplot(x='availability_365', y='property_type', data=top10PT)
 plt.title('Property Type vs Availability 365')
@@ -219,4 +219,82 @@ plt.xlabel('Availability 365')
 plt.ylabel('Property Type')
 plt.show()
 
+#Per contar amenities
+amenity_counts = defaultdict(int)
+
+#Funció per netejar i comptar elements
+def count_elements(column, counts_dict):
+    for value in column.dropna():
+        try:
+            #Si el valor es un numpy array, convertirlo a string
+            if isinstance(value, np.ndarray):
+                value = ' '.join(value)
+
+            #Limpiar y normalizar el string
+            value = value.replace('\\u2019', "'")  #Reemplazar caracteres unicode
+            value = value.strip('[]')  # Eliminar corchetes
+            value = value.replace('\'', '').replace('\"', '')
+            value = value.split('  ')  # Dividir por dobles espacios o comas
+
+            # Eliminar espacios en blanco adicionales
+            value = [item.strip() for item in value if item.strip()]
+        except (ValueError, SyntaxError):  # Si hay error, tratamos como lista vacía
+            value = []
+
+        #Incrementar el contador por cada item en la lista
+        for item in value:
+            counts_dict[item] += 1
+
+
+# Contar los elementos en la columna 'amenities'
+count_elements(dataBcn['amenities'], amenity_counts)
+
+# Convertir a DataFrame para visualización
+amenity_counts_df = pd.DataFrame(amenity_counts.items(), columns=['Amenity', 'Count'])
+
+# Ordenar por contador
+amenity_counts_df = amenity_counts_df.sort_values(by='Count', ascending=False)
+
+# Gráfica de las 10 principales amenities
+plt.figure(figsize=(15, 10))
+top_amenities = amenity_counts_df.head(10)
+plt.barh(top_amenities['Amenity'], top_amenities['Count'])
+plt.title('Top 10 Amenities Counts')
+plt.xlabel('Count')
+plt.ylabel('Amenity')
+plt.grid(axis='x')
+plt.show()
+
+# Mostrar el DataFrame con el conteo de amenities
+print(amenity_counts_df)
+
+# Añadir una nueva columna con la cantidad de amenities
+dataBcn['amenities_count'] = dataBcn['amenities'].apply(lambda x: len(x))
+
+# Filtrar solo las columnas que necesitas: amenities_count y price
+data_filtered_price = dataBcn[['amenities_count', 'price']]
+
+# Crear el scatter plot de amenities_count vs price
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='amenities_count', y='price', data=data_filtered_price)
+plt.title('Scatter plot de Amenities Count vs Price')
+plt.xlabel('Amenities Count')
+plt.ylabel('Price')
+plt.show()
+
+# Calcular la correlación de Pearson entre amenities_count y price
+correlation = data_filtered_price['amenities_count'].corr(data_filtered_price['price'])
+print(f'La correlación de Pearson entre Amenities Count y Price es: {correlation}')
+
+#Cantidad amenities vs property_type
+top10_PropertyType = dataBcn['property_type'].value_counts().head(10).index
+top10PT = dataBcn[dataBcn['property_type'].isin(top10_PropertyType)]
+
+plt.figure(figsize=(15, 15))
+sns.boxplot(x='property_type', y='amenities_count', data=top10PT)
+plt.title('Property Type vs Amenities Count')
+plt.xlabel('Property Type')
+plt.ylabel('Amenities Count')
+plt.xticks(rotation=45)
+plt.show()
 
